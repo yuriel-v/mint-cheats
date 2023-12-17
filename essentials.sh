@@ -87,7 +87,7 @@ fi
 
 # Other (non-)CLI essentials
 printf "> Ensuring other essentials are installed... "
-essentials=( '7zip' 'tar' 'zip' 'unzip' 'git' 'gpg' 'gcc' 'g++' 'make' )
+essentials=( '7zip' 'tar' 'zip' 'unzip' 'git' 'gpg' 'gcc' 'g++' 'make' 'openjdk-17-jre' )
 if apt-get install -y -qq "${essentials[@]}"; then
     printf "done.\n"
 else
