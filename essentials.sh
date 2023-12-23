@@ -10,7 +10,12 @@
 # Some packages need to be ran in user mode (e.g. spicetify, proton), these
 # will be covered in another script.
 
+# List of all installed packages, so we don't have to query again
 packages=$(apt list --installed 2>/dev/null)
+
+# Dynamic essentials (modify at your leisure)
+# Default: 7zip, tar, zip, unzip, git, gpg, gcc, g++, make, openjdk-17-jre
+essentials=( '7zip' 'tar' 'zip' 'unzip' 'git' 'gpg' 'gcc' 'g++' 'make' 'openjdk-17-jre' )
 
 has_package() {
     result=$(grep -q "$1" <<< ${packages})
@@ -27,9 +32,33 @@ if [ $UID -ne 0 ]; then
     exit 1
 fi
 
+init_prompt=$(cat <<- EOF
+== Essentials installing utility ==
+- This utility will install the following "static" (unchanging) essentials:
+  - Wine
+  - Winetricks
+  - Steam
+  - Discord
+  - Spotify
+- This utility will also install the following "dynamic" essentials:
+- Note, these essentials may be changed within the script, hence dynamic.
+EOF
+)
+printf -- "${init_prompt}\n"
+for pkg in "${essentials[@]}"; do
+    printf -- "  - $pkg\n"
+done
+printf "> Proceed? [y/N]: "
+read -n1 confirm
+
+if ! [[ "$confirm" =~ "[yY]" ]]; then
+    printf "\nAborting.\n"
+    exit 0
+fi
+
 # Wine + Winetricks
 ubuntu_version=$(grep "UBUNTU_CODENAME" /etc/os-release | grep -o [^=]*$)
-printf "> Installing Wine (stable) and Winetricks... "
+printf -- "- Installing Wine (stable) and Winetricks... "
 
 if has_package 'winehq-stable'; then
     printf "pass.\n"
@@ -49,7 +78,7 @@ else
 fi
 
 # Steam and Discord
-printf "> Installing Steam... "
+printf -- "- Installing Steam... "
 apt-get update -qq  # in case cache wasn't updated in previous step
 if has_package 'steam'; then
     printf "pass.\n"
@@ -61,7 +90,7 @@ else
     fi
 fi
 
-printf "> Installing Discord... "
+printf -- "- Installing Discord... "
 if has_package 'discord'; then
     printf "pass.\n"
 else
@@ -74,7 +103,7 @@ else
 fi
 
 # Spotify
-printf "> Installing Spotify... "
+printf -- "- Installing Spotify... "
 if has_package 'spotify-client'; then
     printf "pass.\n"
 else
@@ -86,8 +115,7 @@ else
 fi
 
 # Other (non-)CLI essentials
-printf "> Ensuring other essentials are installed... "
-essentials=( '7zip' 'tar' 'zip' 'unzip' 'git' 'gpg' 'gcc' 'g++' 'make' 'openjdk-17-jre' )
+printf -- "- Ensuring other essentials are installed... "
 if apt-get install -y -qq "${essentials[@]}"; then
     printf "done.\n"
 else

@@ -28,7 +28,24 @@ if [ $UID -ne 0 ]; then
     exit 1
 fi
 
-printf "> Checking if 'xboxdrv' package is present... "
+init_prompt=$(cat <<- EOF
+== Xbox controller fix utility ==
+- This utility will do the following tasks:
+  - Install the package 'xboxdrv' if missing;
+  - Add a dbus override config file (reboot needed);
+  - Install a systemd service to run the utility on boot.
+> Proceed? [y/N]: 
+EOF
+)
+printf -- "$init_prompt"
+read -n1 confirm
+
+if ! [[ "$confirm" =~ "[yY]" ]]; then
+    printf "\nAborting.\n"
+    exit 0
+fi
+
+printf -- "- Checking if 'xboxdrv' package is present... "
 if check_xboxdrv; then
     printf "pass.\n"
 else
@@ -42,7 +59,7 @@ else
     fi
 fi
 
-printf "> Adding dbus override to xboxdrv daemon... "
+printf -- "- Adding dbus override to xboxdrv daemon... "
 cat > /etc/dbus-1/system.d/org.seul.Xboxdrv.conf <<- EOF
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus
 Configuration 1.0//EN"
@@ -55,7 +72,7 @@ Configuration 1.0//EN"
 EOF
 printf "done.\n"
 
-printf "> Writing start script to '${start_script_path}'... "
+printf -- "- Writing start script to '${start_script_path}'... "
 mkdir -p "$start_script_path"
 cat > "${start_script_path}/start.sh" <<- EOF
 #!/usr/bin/bash
@@ -68,7 +85,7 @@ xboxdrv --silent --detach-kernel-driver --daemon --detach --type xbox360
 EOF
 printf "done.\n"
 
-printf "> Writing SystemD service file and enabling it... "
+printf -- "- Writing SystemD service file and enabling it... "
 cat > /etc/systemd/system/xboxctl-fix.service <<- EOF
 [Unit]
 Description=XBox controller fix
@@ -89,4 +106,4 @@ systemctl daemon-reload
 systemctl enable --quiet xboxctl-fix
 printf "done.\n"
 
-printf "\n> All tasks have been complete. Reboot for them to take effect.\n"
+printf -- "\n- All tasks have been complete. Reboot for them to take effect.\n"
